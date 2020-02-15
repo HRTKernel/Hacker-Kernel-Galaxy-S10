@@ -1,0 +1,22 @@
+unmount("/system_root");
+assert(is_substring("G973", getprop("ro.boot.bootloader")) || abort("Error: This Kernel is only for G973F, aborting..."););
+show_progress(0.070000, 0);
+set_progress(0.600000);
+ui_print(" ");
+ui_print(" ");
+ui_print("Hacker Kernel for SM-G973F");
+ui_print(" by thehacker911");
+ui_print(" ");
+ui_print(" - checking device...");
+
+if is_substring("G973", getprop("ro.boot.bootloader")) then
+    ui_print(" -- S10 detected");
+	assert(package_extract_file("boot.img", "/dev/block/platform/13d60000.ufs/by-name/boot"));
+endif;
+
+
+ui_print(" ");
+ui_print("Done, reboot and have fun!");
+ui_print(" ");
+ui_print(" ");
+set_progress(1.000000);
