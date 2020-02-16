@@ -81,8 +81,10 @@ replace_file() {
 export ARCH=arm64
 export BUILD_CROSS_COMPILE=$TOOLCHAIN_DIR/$TOOLCHAIN
 export BUILD_JOB_NUMBER=`grep processor /proc/cpuinfo|wc -l`
-export KBUILD_BUILD_USER=thehacker911
-export KBUILD_BUILD_HOST=gmail.com
+export CC=$TOOLCHAIN/bin/clang
+export CLANG_TRIPLE=$TOOLCHAIN/bin/aarch64-linux-gnu-
+#export KBUILD_BUILD_USER=thehacker911
+#export KBUILD_BUILD_HOST=gmail.com
 export LOCALVERSION=-`echo $KERNEL_NAME`
 
 KERNEL_DIR=$(pwd)
@@ -103,7 +105,7 @@ DTB_DIR=$OUTPUT_DIR/dtb
 
 SEANDROIDENFORCE()
 {
-	echo -n "SEANDROIDENFORCE" >> image-new.img
+	echo SEANDROIDENFORCE >> image-new.img
 }
 
 ###build
@@ -126,6 +128,8 @@ CLEAN()
 		find . -type f -name "*orig" -exec rm -f {} \;
 		find . -type f -name "*rej" -exec rm -f {} \;
 		find . -name "*.ko" -exec rm {} \;
+		rm $KERNEL_DIR/zip/*.zip
+		rm $KERNEL_DIR/zip/boot.img
 	fi
 	
 	echo ""
@@ -137,9 +141,9 @@ CLEAN()
 
 BUILD_CONFIG()
 {
-	cp $KERNEL_DEFCONFIG $CONFIG_DIR/$CONFIG_DIR
-	remove_line $CONFIG_DIR/$CONFIG "# CONFIG_CPU_FREQ_GOV_ONDEMAND is not set";
-	insert_line $CONFIG_DIR/$CONFIG "CONFIG_CPU_FREQ_GOV_ONDEMAND=y" after "CONFIG_CPU_FREQ_GOV_SCHEDUTIL=y";
+	cp $KERNEL_DIR/$KERNEL_DEFCONFIG $KERNEL_DIR/$CONFIG_DIR/$KERNEL_DEFCONFIG
+	remove_line $KERNEL_DIR/$CONFIG_DIR/$KERNEL_DEFCONFIG "# CONFIG_CPU_FREQ_GOV_ONDEMAND is not set";
+	insert_line $KERNEL_DIR/$CONFIG_DIR/$KERNEL_DEFCONFIG "CONFIG_CPU_FREQ_GOV_ONDEMAND=y" after "CONFIG_CPU_FREQ_GOV_SCHEDUTIL=y";
 	
 }
 
@@ -156,15 +160,11 @@ BUILD_KERNEL()
 
 	BUILD_CONFIG
 	export ANDROID_MAJOR_VERSION=q
-
-
-	make -j$BUILD_JOB_NUMBER ARCH=$ARCH \
-			CROSS_COMPILE=$BUILD_CROSS_COMPILE \
-			$KERNEL_DEFCONFIG || exit -1
-
-	make -j$BUILD_JOB_NUMBER ARCH=$ARCH \
-			CROSS_COMPILE=$BUILD_CROSS_COMPILE || exit -1
-
+	export $CC
+	export $CLANG_TRIPLE
+	
+	make ARCH=arm64 $KERNEL_DEFCONFIG
+	make ARCH=arm64 -j$BUILD_JOB_NUMBER
 	
 	echo ""
 	echo "================================="
@@ -176,8 +176,8 @@ BUILD_KERNEL()
 BUILD_RAMDISK()
 {
 	mv $KERNEL_DIR/arch/$ARCH/boot/Image $KERNEL_DIR/arch/$ARCH/boot/boot.img-zImage
-	rm -f $KERNEL_DIR/ramdisk/split_img/boot.img-zImage
-	mv -f $KERNEL_DIR/arch/$ARCH/boot/boot.img-zImage $KERNEL_DIR/ramdisk/split_img/boot.img-zImage
+	rm -f $KERNEL_DIR/Ramdisk/split_img/boot.img-zImage
+	mv -f $KERNEL_DIR/arch/$ARCH/boot/boot.img-zImage $KERNEL_DIR/Ramdisk/split_img/boot.img-zImage
 	cd $KERNEL_DIR/Ramdisk
 	./repackimg.sh --nosudo
 	SEANDROIDENFORCE
@@ -188,7 +188,7 @@ BUILD_RAMDISK()
 BUILD_ZIP()
 {
 	cd $KERNEL_DIR/zip
-	zip -r $KERNEL_NAME.zip META-INF
+	zip -r $KERNEL_NAME.zip META-INF boot.img
 }
 
 # MAIN FUNCTION
